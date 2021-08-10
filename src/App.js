@@ -54,6 +54,7 @@ class App extends Component {
 
     // Point set for game
     else {
+      this.setState({message: "Point is " + this.state.stage});
       // Shooter wins
       if ( rollTotal === this.state.stage ) {
         this.shooterWins();
@@ -66,7 +67,11 @@ class App extends Component {
   }
 
   shooterWins() {
-    this.setState({message: "Shooter Wins! Take pot, then keep rolling.", rollCount: 0});
+    this.setState({
+      message: "Shooter Wins! Take pot, then keep rolling.", 
+      rollCount: 0,
+      stage: "The Comeout",
+    });
   }
 
   shooterLoses() {
@@ -84,7 +89,7 @@ class App extends Component {
 
   rollAll() {
     this.reactDice.rollAll();
-    this.setState({ rolling: true});
+    this.setState({ rolling: true, message: "Rolling..."});
   }
   
   render() {
@@ -94,9 +99,8 @@ class App extends Component {
       <div 
         style={this.state.style}
       >
-        <h4>Roll {this.state.rollCount}</h4>
+        <h4>Roll Count: {this.state.rollCount}</h4>
         <h1>{this.state.message}</h1>
-        <h2>{this.state.stage}</h2>
         <ReactDice
           {...this.state}
           rollDone={this.rollDone}
