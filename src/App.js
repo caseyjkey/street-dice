@@ -1,4 +1,7 @@
 import React, { Component } from 'react'
+import 'bootstrap/dist/css/bootstrap.min.css'
+import './App.css'
+import { Button, Container, Row, Col } from 'reactstrap'
 import ReactDice from 'react-dice-complete'
 import 'react-dice-complete/dist/react-dice-complete.css'
 
@@ -24,13 +27,12 @@ class App extends Component {
       numDice: 2,
       sides: 6,
       rollTime: 1,
-      faceColor: '#663399',
-      dotColor: '#F5BD02',
+      faceColor: '--bs-danger',
+      dotColor: '--bs-white',
       best: [-1, -1],
       diceTotal: '...',
       rolling: false,
       rollCount: 0,
-      style: {float: 'left', marginRight: '5em'},
       stage: Stages[0],
       player: player,
       message: "Player " + (player + 1) + ", high or low when rolling for Shooter?",
@@ -50,7 +52,7 @@ class App extends Component {
     this.setState({ 
       shooter: value,
       player: nextPlayer,
-      message: "Player " + nextPlayer + " roll for best value."
+      message: "Player " + nextPlayer + " roll for " + value.toLowerCase() + "est value."
     });
   }
 
@@ -153,58 +155,91 @@ class App extends Component {
   }
   
   render() {
-    
+
+    const myStyle = {
+      display: "flex",
+      width: "100%",
+      maxWidth: "60%",
+      margin: "0 auto",
+      justifyContent: "center"
+    };
 
     return (
-      <div 
-        style={this.state.style}
-      >
-        <h1>{this.state.message}</h1>
-        { this.state.stage === Stages[0] && !this.state.shooter && (
-          <React.Fragment>
-            <button 
-                onClick={() => this.setShooter("High")}
-              >
-                High
-              </button>
-              <button 
-                onClick={() => this.setShooter("Low")}
-              >
-                Low
-              </button>
-          </React.Fragment>
-        )}
-        { this.state.shooter && (
-          <React.Fragment>
-            {this.state.best[0] > -1 &&
-              <React.Fragment>
-                <h4>
-                  {this.state.shooter + "est"} roll: {this.state.best[1] + ", by Player " + this.state.best[0]}
-                </h4>
-                <h4>Roll Count: {this.state.rollCount}</h4>
-              </React.Fragment>
-            }
-            {this.state.diceTotal !== "..." && (
-              <React.Fragment>
-                <ReactDice
-                  {...this.state}
-                  rollDone={this.rollDone}
-                  ref={dice => this.reactDice = dice}
-                  defaultRoll={3}
-                />
-              </React.Fragment>
-            )}
-            <button 
-              onClick={this.state.diceTotal === "..." ? this.setState({ diceTotal: "" }) : this.rollAll}
-              disabled={this.state.rolling}
-            >
-              {this.state.diceTotal === "..." ? "Okay" : "Roll"}
-            </button>
-            { // <h4>Player {this.state.player} total: {this.state.diceTotal}</h4> 
-            }
-          </React.Fragment>
-        )}
-      </div>
+      <Container>
+        <Row 
+          style={this.state.style}
+        >
+          <Col>
+            <Container>
+              <Row>
+                <Col align="center">
+                  <h1>{this.state.message}</h1>
+                </Col>
+              </Row>
+              { this.state.stage === Stages[0] && !this.state.shooter && (
+                <Row>
+                  <Col align="center">
+                    <Button 
+                      color="primary"
+                      size="lg"
+                      onClick={() => this.setShooter("High")}
+                    >
+                      High
+                    </Button>
+                  </Col>
+                  <Col align="center">
+                    <Button 
+                      color="primary"
+                      size="lg"
+                      onClick={() => this.setShooter("Low")}
+                    >
+                      Low
+                    </Button>
+                  </Col>
+                </Row>
+              )}
+              { this.state.shooter && (
+                <Row align="center">
+                  {this.state.best[0] > -1 &&
+                    <React.Fragment>
+                      <h4>
+                        {this.state.shooter + "est"} roll: {this.state.best[1] + ", by Player " + this.state.best[0]}
+                      </h4>
+                      <h4>Roll Count: {this.state.rollCount}</h4>
+                    </React.Fragment>
+                  }
+                  {this.state.diceTotal !== "..." && (
+                    <React.Fragment>
+                      <ReactDice
+                        {...this.state}
+                        className="dice"
+                        rollDone={this.rollDone}
+                        ref={dice => this.reactDice = dice}
+                        defaultRoll={3}
+                      />
+                    </React.Fragment>
+                  )}
+                  <Col>
+                  </Col>
+                  <Col>
+                    <Button 
+                      color="primary"
+                      onClick={this.state.diceTotal === "..." ? this.setState({ diceTotal: "" }) : this.rollAll}
+                      disabled={this.state.rolling}
+                    >
+                      {this.state.diceTotal === "..." ? "Okay" : "Roll"}
+                    </Button>
+                    { // <h4>Player {this.state.player} total: {this.state.diceTotal}</h4> 
+                    }
+                  </Col>
+                  <Col>
+                  </Col>
+                </Row>
+              )}
+            </Container>
+          </Col>
+        </Row>
+      </Container>
     );
   }
 }
