@@ -17,25 +17,26 @@ let Stages = [
 class App extends Component {
   constructor(props) {
     super(props);
-    let player = Math.round(Math.random());
+    let player = Math.round(Math.random()+1);
     this.state = {
       outline: true,
       outlineColor: '#0000000',
-      dieSize: 60,
+      dieSize: '120',
       disableIndividual: true,
       margin: 15,
       numDice: 2,
       sides: 6,
       rollTime: 1,
-      faceColor: '--bs-danger',
-      dotColor: '--bs-white',
+      faceColor: 'useCss',
+      dotColor: 'useCss',
       best: [-1, -1],
       diceTotal: '...',
+      roll: false,
       rolling: false,
       rollCount: 0,
       stage: Stages[0],
       player: player,
-      message: "Player " + (player + 1) + ", high or low when rolling for Shooter?",
+      message: "High or low when rolling for Shooter?",
       shooter: null
     }
     this.rollDone = this.rollDone.bind(this);
@@ -47,12 +48,11 @@ class App extends Component {
 
 
   setShooter(value) {
-    let nextPlayer = this.state.player + 1;
-    console.log(value, nextPlayer);
+    let nextPlayer = this.state.player === 1 ? 2 : 1;
     this.setState({ 
       shooter: value,
       player: nextPlayer,
-      message: "Player " + nextPlayer + " roll for " + value.toLowerCase() + "est value."
+      message: "Roll for " + value.toLowerCase() + "est value."
     });
   }
 
@@ -68,28 +68,39 @@ class App extends Component {
     console.log("diceTotal:", this.state.diceTotal, "rollCount", this.state.rollCount, "rollTotal", rollTotal)
     if (this.state.stage === Stages[0]) {
       let best = this.state.best;
+      let roll = this.state.roll;
       let message, stage;
       let nextPlayer = this.state.player === 1 ? 2 : 1;
       if (this.state.rollCount === 1 || best[1] === rollTotal) {
         console.log('1', this.state.player, nextPlayer)
         best = [this.state.player, rollTotal];
-        message = "Now, Player " + nextPlayer + " roll for best."
+        message = "Now, Player " + nextPlayer + " roll for " + this.state.shooter.toLowerCase()+ "est."
         console.log('best1:', best)
         stage = "Set Shooter"
       } else {
         console.log('2', best, "rollTotal", rollTotal)
         best = best[1] > rollTotal ? best : [this.state.player, rollTotal];
         message = "Player " + this.state.player + " rolled " + rollTotal + ". Player " + best[0] + " wins and becomes the shooter.";
-        stage = "The Comeout"
+        stage = "The Comeout";
+        nextPlayer = best[0];
+        roll = false;
       }
 
-      console.log("best", best, "stg", stage, nextPlayer)
-      this.setState({
+      console.log({
         best: best,
-        diceTotal: best[1],
+        diceTotal: best[0] > -1 ? best[1] : "...",
         stage: stage,
         player: nextPlayer,
-        message: message
+        message: message,
+        roll: roll
+      })
+      this.setState({
+        best: best,
+        diceTotal: best[0] > -1 ? best[1] : "...",
+        stage: stage,
+        player: nextPlayer,
+        message: message,
+        roll: roll
       })
     }
 
@@ -130,8 +141,7 @@ class App extends Component {
 
   shooterWins() {
     this.setState({
-      message: "Shooter Wins! Take pot, then keep rolling.", 
-      rollCount: 0,
+      message: "Shooter wins! Take pot, then keep rolling.", 
       stage: "The Comeout",
     });
   }
@@ -164,6 +174,20 @@ class App extends Component {
       justifyContent: "center"
     };
 
+    const highLowButtonStyle = {
+      height: "50vh",
+      width: "40vw",
+      fontSize: "3em",
+      borderRadius: "0.25em"
+    }
+
+    const rollButtonStyle = {
+      height: '25vh',
+      width: '75vw',
+      fontSize: '5em',
+      borderRadius: '0.25em'
+    }
+
     return (
       <Container>
         <Row 
@@ -171,17 +195,27 @@ class App extends Component {
         >
           <Col>
             <Container>
-              <Row>
-                <Col align="center">
-                  <h1>{this.state.message}</h1>
-                </Col>
-              </Row>
-              { this.state.stage === Stages[0] && !this.state.shooter && (
+              {this.state.best[0] === -1 && 
                 <Row>
+                  <Row>
+                    <Col align="center" className="mt-4 text-uppercase">
+                      <h1 className="fw-bold">Player {this.state.player}</h1>
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col align="center" className="mt-2 mb-4">
+                      <h1>{this.state.message}</h1>
+                    </Col>
+                  </Row>
+                </Row>
+              }
+              { this.state.stage === Stages[0] && !this.state.shooter && (
+                <Row className="align-items-end" style={{minHeight: "40em"}}>
                   <Col align="center">
                     <Button 
                       color="primary"
                       size="lg"
+                      style={highLowButtonStyle}
                       onClick={() => this.setShooter("High")}
                     >
                       High
@@ -191,6 +225,7 @@ class App extends Component {
                     <Button 
                       color="primary"
                       size="lg"
+                      style={highLowButtonStyle}
                       onClick={() => this.setShooter("Low")}
                     >
                       Low
@@ -199,41 +234,50 @@ class App extends Component {
                 </Row>
               )}
               { this.state.shooter && (
-                <Row align="center">
+                <Row align="center" className="align-items-end">
                   {this.state.best[0] > -1 &&
-                    <React.Fragment>
+                    <Col className="mt-4">
+                      <h3>{"Player " + (this.state.player === 1 ? "2" : "1") + " rolled " + this.state.diceTotal + "."}</h3>
                       <h4>
                         {this.state.shooter + "est"} roll: {this.state.best[1] + ", by Player " + this.state.best[0]}
                       </h4>
                       <h4>Roll Count: {this.state.rollCount}</h4>
-                    </React.Fragment>
+                    </Col>
                   }
                   {this.state.diceTotal !== "..." && (
-                    <React.Fragment>
-                      <ReactDice
-                        {...this.state}
-                        className="dice"
-                        rollDone={this.rollDone}
-                        ref={dice => this.reactDice = dice}
-                        defaultRoll={3}
-                      />
-                    </React.Fragment>
-                  )}
-                  <Col>
-                  </Col>
-                  <Col>
-                    <Button 
-                      color="primary"
-                      onClick={this.state.diceTotal === "..." ? this.setState({ diceTotal: "" }) : this.rollAll}
-                      disabled={this.state.rolling}
-                    >
-                      {this.state.diceTotal === "..." ? "Okay" : "Roll"}
-                    </Button>
-                    { // <h4>Player {this.state.player} total: {this.state.diceTotal}</h4> 
-                    }
-                  </Col>
-                  <Col>
-                  </Col>
+                    <Row className="align-items-center" style={{minHeight: "20em"}}>
+                      <Col>
+                        <ReactDice
+                          {...this.state}
+                          className="dice"
+                          rollDone={this.rollDone}
+                          ref={dice => this.reactDice = dice}
+                          defaultRoll={3}
+                        />
+                      </Col>
+                    </Row>
+                    ) 
+                  }
+                  {this.state.best[0] !== -1 && 
+                    <Row>
+                      <Col align="center" className="">
+                        <h1>{this.state.message}</h1>
+                      </Col>
+                    </Row>
+                  }
+                  <Row className="align-items-end" style={{minHeight: this.state.roll ? "25em" : this.state.diceTotal !== "..." ? "20em" : "45em"}}>
+                    <Col>
+                      <Button 
+                        color="primary"
+                        style={rollButtonStyle}
+                        className=""
+                        onClick={this.state.diceTotal === "..." ? () => this.setState({ diceTotal: "", roll: true }) : this.rollAll}
+                        disabled={this.state.rolling}
+                      >
+                        {this.state.roll ? "Roll" : "Okay"}
+                      </Button>
+                    </Col>
+                  </Row>
                 </Row>
               )}
             </Container>
