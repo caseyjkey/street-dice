@@ -5,6 +5,10 @@ import { Button, Container, Row, Col } from 'reactstrap'
 import ReactDice from 'react-dice-complete'
 import 'react-dice-complete/dist/react-dice-complete.css'
 import { useViewport } from './utils/viewport'
+import { findByLabelText } from '@testing-library/dom'
+import { isAbsolute } from 'path'
+import { auto } from '@popperjs/core'
+import { FLIPPED_ALIAS_KEYS } from '@babel/types'
 
 let player = Math.round(Math.random()+1);
 
@@ -43,21 +47,18 @@ const App = () => {
 
   let rollDone = (value, values) => {
     let rollCount = state.rollCount + 1;
-    console.log("1 rollCount", state, rollCount)
     setState({
       ...state, 
       rollCount: rollCount,
       diceTotal: value,
       rolling: false, 
     });
-    console.log("2 rollCount", state)
-
 
     let bet = () => {
       setState({
         ...state,
         message: "Shooter (Player " + state.shooter + ") make bet.",
-        stage: "Bet"
+        stage: "Bet",
       })
     }
 
@@ -66,19 +67,20 @@ const App = () => {
         ...state,
         message: "Shooter wins! Take pot, then keep rolling.", 
         stage: "The Comeout",
+        rolling: false,
       });
     }
 
     let shooterLoses = () => {
-      setState({...state, message: "Shooter loses! Pass the dice.", rollCount: 0});
+      setState({...state, message: "Shooter loses! Pass the dice.", rollCount: 0, rolling: false, });
 
       // If Player 2 lost, return to Player 1
       if(state.style['float'] === 'right') {
-        setState({...state, style: {...state.style, 'float': 'left'}});
+        setState({...state, style: {...state.style, 'float': 'left'}, rolling: false, });
       }
       // If Shooter loses (Player 1), float the dice to Player 2
       else
-        setState({...state, style: {...state.style, 'float': 'right'}});
+        setState({...state, style: {...state.style, 'float': 'right'}, rolling: false, });
     }
 
     let rollTotal = value;
@@ -131,13 +133,13 @@ const App = () => {
 
       // Point set
       else {
-        setState({...state, message: "Point is " + rollTotal, point: rollTotal, stage: "The Point"})
+        setState({...state, message: "Point is " + rollTotal, point: rollTotal, stage: "The Point", rolling: false,})
       }
     }
 
     // Point set for game
     else {
-      setState({...state, message: "Point is " + state.point});
+      setState({...state, message: "Point is " + state.point, rolling: false, });
       // Shooter wins
       if ( rollTotal === state.point ) {
         shooterWins();
@@ -174,11 +176,13 @@ const App = () => {
   }
 
   const rollButtonStyle = {
+    position: 'absolute',
+    bottom: 0,
     height: '25vh',
     width: width < breakpoint ? '75vw' : '30vw',
     fontSize: '5em',
     borderRadius: '0.25em',
-    margin: width < breakpoint ? "0em 0 1em 0" : "0 0 3em 0",
+    margin: width < breakpoint ? "0em auto 1em auto" : "0 0 3em 0",
   }
 
   let diceOptions = {
@@ -197,114 +201,81 @@ const App = () => {
   console.log(state);
 
   return (
-    <Container className="vh-100">
-      <Row 
-        style={{
-          ...state.style,
-          justifyContent: "center",
-        }}
-      >
-        <Col>
-          <Container>
-            {state.best[0] === -1 && 
-              <Row>
-                <Row>
-                  <Col align="center" className="mt-4 text-uppercase">
-                    <h1 className="fw-bold">Player {state.player}</h1>
-                  </Col>
-                </Row>
-                <Row>
-                  <Col align="center" className="mt-2 mb-4">
-                    <h1>{state.message}</h1>
-                  </Col>
-                </Row>
-              </Row>
+    <Container className="vh-100 flex-fill d-flex flex-column">
+      {state.best[0] === -1 && 
+        <Row align="center">
+          <Col className="col-xs-12 center-block text-center">
+            <h1 className="my-4 fw-bold">Player {state.player}</h1>
+            <h1 className="my-4">{state.message}</h1>
+          </Col>
+        </Row>
+      }
+      { state.stage === Stages[0] && !state.shooter && (
+        <Row className="h-50 mt-auto">
+          <Col align="center">
+            <Button 
+              color="primary"
+              size="lg"
+              style={{
+                ...highLowButtonStyle,
+              }}
+              onClick={() => setShooter("High")}
+            >
+              High
+            </Button>
+          </Col>
+          <Col align="center">
+            <Button 
+              color="primary"
+              size="lg"
+              style={{
+                ...highLowButtonStyle,
+              }}
+              onClick={() => setShooter("Low")}
+            >
+              Low
+            </Button>
+          </Col>
+        </Row>
+      )}
+      {state.diceTotal !== "..." && (
+        <Container className="d-flex justify-content-center">
+          <div className="mt-4 d-flex flex-column text-center">
+            { (state.shooter && state.best[0] > -1) && 
+              <div>
+                {state.stage !== "The Point" &&
+                  <h4>
+                    {state.shooter + "est"} roll: {state.best[1] + ", by Player " + state.best[0]}
+                  </h4>
+                }
+                <h4>Roll Count: {state.rollCount}</h4>
+              </div>
             }
-            { state.stage === Stages[0] && !state.shooter && (
-              <Row className="align-items-end" style={{minHeight: "40em"}}>
-                <Col align="center">
-                  <Button 
-                    color="primary"
-                    size="lg"
-                    style={{
-                      ...highLowButtonStyle,
-                      margin: width < breakpoint ? "-3em 0 0em 0" : "0 0 3em 0"
-                    }}
-                    onClick={() => setShooter("High")}
-                  >
-                    High
-                  </Button>
-                </Col>
-                <Col align="center">
-                  <Button 
-                    color="primary"
-                    size="lg"
-                    style={{
-                      ...highLowButtonStyle,
-                      margin: width < breakpoint ? "-9em 0 1em 0" : "0 0 3em 0"
-                    }}
-                    onClick={() => setShooter("Low")}
-                  >
-                    Low
-                  </Button>
-                </Col>
-              </Row>
-            )}
-            { state.shooter && (
-              <Row align="center" className="align-items-end" style={{justifyContent: "center"}}>
-                {state.best[0] > -1 &&
-                  <Col className="mt-4">
-                    <h3>{"Player " + (state.player === 1 ? "2" : "1") + " rolled " + state.diceTotal + "."}</h3>
-                    <h4>
-                      {state.shooter + "est"} roll: {state.best[1] + ", by Player " + state.best[0]}
-                    </h4>
-                    <h4>Roll Count: {state.rollCount}</h4>
-                  </Col>
-                }
-                {state.diceTotal !== "..." && (
-                  <Row className="align-items-center" style={{minHeight: "20em", margin: "-2em 0"}}>
-                    <Col>
-                      <ReactDice
-                        {...diceOptions}
-                        className="dice"
-                        rollDone={rollDone}
-                        ref={dice => state.reactDice = dice}
-                        defaultRoll={3}
-                      />
-                    </Col>
-                  </Row>
-                  ) 
-                }
-                {state.best[0] !== -1 && 
-                  <Row>
-                    <Col align="center" className="" >
-                      <h1 style={{margin: width < breakpoint ? "-2em 0 1.5em 0" : "0 0 0 0"}}>{state.message}</h1>
-                    </Col>
-                  </Row>
-                }
-                <Row 
-                  className="align-elf-end" 
-                  style={{
-                    minHeight: state.roll ? "25em" : state.diceTotal !== "..." ? "20em" : "45em",
-                  }}
-                >
-                  <Col>
-                    <Button 
-                      color="primary"
-                      style={rollButtonStyle}
-                      className=""
-                      onClick={state.diceTotal === "..." ? () => setState({...state, diceTotal: "", roll: true }) : rollAll}
-                      disabled={state.rolling}
-                    >
-                      {state.roll ? "Roll" : "Okay"}
-                    </Button>
-                  </Col>
-                </Row>
-              </Row>
-            )}
-          </Container>
-        </Col>
-      </Row>
+            <ReactDice
+              {...diceOptions}
+              className="dice"
+              rollDone={rollDone}
+              ref={dice => state.reactDice = dice}
+              defaultRoll={3}
+            />
+            { state.best[0] !== -1 && 
+              <h1>{state.message}</h1>
+            }
+          </div>
+        </Container>
+      )}
+      {state.shooter && 
+        <Container className="h-100 d-flex justify-content-center">
+          <Button 
+            color="primary"
+            style={rollButtonStyle}
+            onClick={state.diceTotal === "..." ? () => setState({...state, diceTotal: "", roll: true }) : rollAll}
+            disabled={state.rolling}
+          >
+            {state.roll ? "Roll" : "Okay"}
+          </Button>
+        </Container>
+      }
     </Container>
   );
 }
