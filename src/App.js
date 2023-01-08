@@ -14,7 +14,6 @@ let player = Math.round(Math.random()+1);
 
 let Stages = [
   "Set Shooter",
-  "Bet",
   "The Comeout",
   "The Point"
 ]
@@ -46,6 +45,7 @@ const App = () => {
   }
 
   let rollDone = (value, values) => {
+    console.log("rollDone")
     let rollCount = state.rollCount + 1;
     setState({
       ...state, 
@@ -65,15 +65,22 @@ const App = () => {
     let shooterWins = () => {
       setState({
         ...state,
-        message: "Shooter wins! Take pot, then keep rolling.", 
+        message: "Shooter (Player " + state.player + ") wins! Take pot, then keep rolling.", 
         stage: "The Comeout",
         rolling: false,
       });
     }
 
     let shooterLoses = () => {
-      setState({...state, message: "Shooter loses! Pass the dice.", atage: Stages[], rollCount: 0, rolling: false, });
+      setState({
+        ...state, 
+        message: "Shooter (Player " + state.player + ") loses! Pass the dice.", 
+        stage: "The Comeout", 
+        player: state.player === 1 ? 2 : 1, 
+        rolling: false, 
+      });
 
+      /*
       // If Player 2 lost, return to Player 1
       if(state.style['float'] === 'right') {
         setState({...state, style: {...state.style, 'float': 'left'}, rolling: false, });
@@ -81,6 +88,7 @@ const App = () => {
       // If Shooter loses (Player 1), float the dice to Player 2
       else
         setState({...state, style: {...state.style, 'float': 'right'}, rolling: false, });
+        */
     }
 
     let rollTotal = value;
@@ -175,14 +183,17 @@ const App = () => {
     borderRadius: "0.25em"
   }
 
-  const rollButtonStyle = {
+  let rollButtonStyle = {
     position: 'absolute',
-    bottom: 0,
     height: '25vh',
     width: width < breakpoint ? '75vw' : '30vw',
     fontSize: '5em',
     borderRadius: '0.25em',
     margin: width < breakpoint ? "0em auto 1em auto" : "0 0 3em 0",
+  }
+
+  if (width < breakpoint) {
+    rollButtonStyle['bottom'] = 0;
   }
 
   let diceOptions = {
