@@ -45,7 +45,6 @@ const App = () => {
   }
 
   let rollDone = (value, values) => {
-    console.log("rollDone")
     let rollCount = state.rollCount + 1;
     setState({
       ...state, 
@@ -79,16 +78,6 @@ const App = () => {
         player: state.player === 1 ? 2 : 1, 
         rolling: false, 
       });
-
-      /*
-      // If Player 2 lost, return to Player 1
-      if(state.style['float'] === 'right') {
-        setState({...state, style: {...state.style, 'float': 'left'}, rolling: false, });
-      }
-      // If Shooter loses (Player 1), float the dice to Player 2
-      else
-        setState({...state, style: {...state.style, 'float': 'right'}, rolling: false, });
-        */
     }
 
     let rollTotal = value;
@@ -259,6 +248,7 @@ const App = () => {
                     {state.shooter + "est"} roll: {state.best[1] + ", by Player " + state.best[0]}
                   </h4>
                 }
+                <h1 className="my-4 fw-bold">Player {state.player}</h1>
                 <h4>Roll Count: {state.rollCount}</h4>
               </div>
             }
