@@ -5,6 +5,13 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { ViewportProvider } from './utils/viewport'
+import TagManager from 'react-gtm-module'
+
+const tagManagerArgs = {
+  gtmId: 'G-26FXNH4R45<YOUR GTM ID>'
+}
+
+TagManager.initialize(tagManagerArgs)
 
 ReactDOM.render(
   <React.StrictMode>
