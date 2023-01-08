@@ -72,7 +72,7 @@ const App = () => {
     }
 
     let shooterLoses = () => {
-      setState({...state, message: "Shooter loses! Pass the dice.", rollCount: 0, rolling: false, });
+      setState({...state, message: "Shooter loses! Pass the dice.", atage: Stages[], rollCount: 0, rolling: false, });
 
       // If Player 2 lost, return to Player 1
       if(state.style['float'] === 'right') {
@@ -243,7 +243,7 @@ const App = () => {
           <div className="mt-4 d-flex flex-column text-center">
             { (state.shooter && state.best[0] > -1) && 
               <div>
-                {state.stage !== "The Point" &&
+                {state.stage === "Set Shooter" &&
                   <h4>
                     {state.shooter + "est"} roll: {state.best[1] + ", by Player " + state.best[0]}
                   </h4>
