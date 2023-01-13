@@ -1,14 +1,10 @@
 import React, { useState } from 'react'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './App.css'
-import { Button, Container, Row, Col } from 'reactstrap'
+import { Button, Container, Row, Col, Form, FormGroup, Label, Input } from 'reactstrap'
 import ReactDice from 'react-dice-complete'
 import 'react-dice-complete/dist/react-dice-complete.css'
 import { useViewport } from './utils/viewport'
-import { findByLabelText } from '@testing-library/dom'
-import { isAbsolute } from 'path'
-import { auto } from '@popperjs/core'
-import { FLIPPED_ALIAS_KEYS } from '@babel/types'
 
 let player = Math.round(Math.random()+1);
 
@@ -23,16 +19,20 @@ const App = () => {
 
   let [state, setState] = useState({
     reactDice: null,
-    best: [-1, -1],
-    diceTotal: '...',
+    best: [-1, -1], // only used for set shooter
+    diceTotal: '...', // only used at start (set shooter)
     roll: false,
     rolling: false,
     rollCount: 0,
     stage: Stages[0],
     player: player,
     message: "High or low when rolling for Shooter?",
-    shooter: null
+    shooter: null,
+    pot: false,
+    score: [0, 0]
   });
+  let [bet, setBet] = useState({1: false, 2: false});
+  let [switchPlayer, setSwitchPlayer] = useState(false);
 
   let setShooter = (value) => {
     let nextPlayer = state.player === 1 ? 2 : 1;
@@ -44,6 +44,31 @@ const App = () => {
     });
   }
 
+  let placeBet = () => {
+    let player = state.player === 1 ? 2 : 1;
+    console.log(bet);
+    if (bet[1] && bet[2]) {
+      setState({
+        ...state,
+        stage: "The Comeout",
+        message: "",
+        roll: true,
+        player: player,
+      })
+    } else {
+      let newBet = bet;
+      newBet[player] = state.bet;
+      setBet(newBet);
+      console.log(newBet, bet)
+
+      setState({
+        ...state,
+        player: player,
+        stage: "Bet",
+      });
+    }
+  }
+
   let rollDone = (value, values) => {
     let rollCount = state.rollCount + 1;
     setState({
@@ -53,30 +78,36 @@ const App = () => {
       rolling: false, 
     });
 
-    let bet = () => {
-      setState({
-        ...state,
-        message: "Shooter (Player " + state.shooter + ") make bet.",
-        stage: "Bet",
-      })
-    }
+    
 
     let shooterWins = () => {
+      let newScore = state.score;
+      newScore[state.player === 1 ? 2 : 1] += newScore[state.player];
+
       setState({
         ...state,
-        message: "Shooter (Player " + state.player + ") wins! Take pot, then keep rolling.", 
+        message: "Shooter wins!", 
         stage: "The Comeout",
-        rolling: false,
+        rolling: true,
+        roll: true,
+        pot: true,
+        score: newScore,
       });
     }
 
     let shooterLoses = () => {
+      let newScore = state.score;
+      newScore[state.player] += state.pot;
+      
+      setSwitchPlayer(true);
       setState({
         ...state, 
-        message: "Shooter (Player " + state.player + ") loses! Pass the dice.", 
+        message: "Shooter loses!", 
         stage: "The Comeout", 
-        player: state.player === 1 ? 2 : 1, 
+        player: state.diceTotal === 7 ? state.player === 1 ? 2 : 1 : state.player, 
         rolling: false, 
+        pot: true,
+        score: newScore,
       });
     }
 
@@ -94,11 +125,12 @@ const App = () => {
       } else {
         best = best[1] > rollTotal ? best : [state.player, rollTotal];
         message = "Player " + state.player + " rolled " + rollTotal + ". Player " + best[0] + " wins and becomes the shooter.";
-        stage = "The Comeout";
+        stage = "Bet";
         nextPlayer = best[0];
         roll = false;
       }
 
+      setSwitchPlayer(false);
       setState({
         ...state,
         best: best,
@@ -111,13 +143,12 @@ const App = () => {
         rolling: false,
       })
     }
-    
+    else if (state.stage === "Bet") {
+      // Bet
+      setState({...state, roll: false});
+    }
     // First roll of the game, after deciding who rolls first
     else if (state.stage === "The Comeout") {
-      // Bet
-
-
-
       // Shooter wins on The Comeout
       if ( rollTotal === 7 || rollTotal === 11) {
         shooterWins();
@@ -130,13 +161,25 @@ const App = () => {
 
       // Point set
       else {
-        setState({...state, message: "Point is " + rollTotal, point: rollTotal, stage: "The Point", rolling: false,})
+        setState({
+          ...state,
+          message: "Point is " + rollTotal,
+          point: rollTotal,
+          stage: "The Point",
+          rolling: false,
+          roll: true,
+        })
       }
     }
 
     // Point set for game
     else {
-      setState({...state, message: "Point is " + state.point, rolling: false, });
+      setState({
+        ...state, 
+        message: "Point is " + state.point, 
+        rolling: false, 
+        roll: true,
+      });
       // Shooter wins
       if ( rollTotal === state.point ) {
         shooterWins();
@@ -144,6 +187,7 @@ const App = () => {
       // Shooter loses, "7 out"
       else if ( rollTotal === 7 ) {
         shooterLoses();
+        setSwitchPlayer(true);
       }
     }
   }
@@ -156,14 +200,6 @@ const App = () => {
   const { width } = useViewport();
   const breakpoint = 620;
 
-  const myStyle = {
-    display: "flex",
-    width: "100%",
-    maxWidth: "60%",
-    margin: "0 auto",
-    justifyContent: "center"
-  };
-
   const highLowButtonStyle = {
     height: width < breakpoint ? "3em" : "5em",
     width: width < breakpoint ? "85vw": "10em",
@@ -174,15 +210,21 @@ const App = () => {
 
   let rollButtonStyle = {
     position: 'absolute',
-    height: '25vh',
+    height: '2em',
     width: width < breakpoint ? '75vw' : '30vw',
     fontSize: '5em',
     borderRadius: '0.25em',
-    margin: width < breakpoint ? "0em auto 1em auto" : "0 0 3em 0",
+    bottom: 0,
+    margin: width < breakpoint ? "0em auto 1em auto" : "0 auto 1em auto",
+    left: 0,
+    right: 0,
+    textAlign: "center"
   }
 
   if (width < breakpoint) {
-    rollButtonStyle['bottom'] = 0;
+    rollButtonStyle = {
+      ...rollButtonStyle,
+    }
   }
 
   let diceOptions = {
@@ -248,7 +290,9 @@ const App = () => {
                     {state.shooter + "est"} roll: {state.best[1] + ", by Player " + state.best[0]}
                   </h4>
                 }
-                <h1 className="my-4 fw-bold">Player {state.player}</h1>
+                {(state.stage === "The Point" || state.stage === "The Comeout") && 
+                  <h1 className="my-4 fw-bold">Player {state.player}</h1>
+                }
                 <h4>Roll Count: {state.rollCount}</h4>
               </div>
             }
@@ -267,14 +311,79 @@ const App = () => {
       )}
       {state.shooter && 
         <Container className="h-100 d-flex justify-content-center">
-          <Button 
-            color="primary"
-            style={rollButtonStyle}
-            onClick={state.diceTotal === "..." ? () => setState({...state, diceTotal: "", roll: true }) : rollAll}
-            disabled={state.rolling}
-          >
-            {state.roll ? "Roll" : "Okay"}
-          </Button>
+          {state.stage === "Bet" && 
+            <Row>
+              <Col align="center">
+                <Form style={{
+                  position: "absolute",
+                  width: "15em",
+                  marginLeft: "auto",
+                  marginRight: "auto",
+                  left: 0,
+                  right: 0,
+                  textAlign: "center"
+                }}>
+                  <FormGroup>
+                    <Label
+                      for="bet"
+                      hidden
+                    >
+                      Bet
+                    </Label>
+                    <Input
+                      id="bet"
+                      name="bet"
+                      placeholder="Bet"
+                      type="number"
+                      value={state.bet}
+                      onChange={(val) => {
+                        if (val.target.attributes.id.value !== "bet") return;
+                        let player = state.player;
+                        let newBet = bet;
+                        newBet[player] = val.target.value; 
+                        setBet(newBet);
+                        setState({...state, bet: val.target.value})
+                      }}
+                    />
+                  </FormGroup>
+                </Form>
+              </Col>
+            </Row>
+          }
+          <Col>
+            {state.pot == true && 
+              <Row className="mt-4">
+                <Button 
+                  color="warning"
+                  style={{
+                    ...rollButtonStyle    
+                  }}
+                  onClick={ () => setState({
+                      ...state, 
+                      pot: false, 
+                      rolling: false, 
+                      roll: true, 
+                      player: switchPlayer ? (state.player === 1 ? 2 : 1) : state.player
+                    }) 
+                  }
+                >
+                  {!bet[1] ? "Okay" : ("$" + (parseInt(bet[1]) + parseInt(bet[2])))}
+                </Button>
+              </Row>
+            }
+            {state.pot !== true && 
+              <Row>
+                <Button 
+                  color="primary"
+                  style={rollButtonStyle}
+                  onClick={state.diceTotal === "..." ? () => setState({...state, diceTotal: "", roll: true }) : state.stage === "Bet" ? () => {console.log("11111111", state); setState({...state, "message": ""}); placeBet();} : rollAll}
+                  disabled={state.rolling || (state.stage === "Bet" && state.bet == false)}
+                >
+                  {state.roll ? "Roll" : state.stage === "Set Shooter" ? "Okay" : switchPlayer ? "Pass" : ((state.stage === "Bet" && !bet[1] && !bet[2]) ? "No Bet" : ((bet[state.player === 1 ? 2 : 1] ? "Fade" : "Match")))}
+                </Button>
+              </Row>
+            }
+          </Col>
         </Container>
       }
     </Container>
