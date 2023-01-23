@@ -23,11 +23,11 @@ const App = () => {
     diceTotal: '...', // only used at start (set shooter)
     roll: false, // Determines roll button text
     rolling: false, // Used to disable roll button
-    rollCount: -1, // 0 hides dice (after losing/winning)
+    rollCount: 0, // 0 hides dice (after losing/winning)
     stage: Stages[0],
     player: player,
     message: "High or low when rolling for Shooter?",
-    shooter: null, // IMPLRMRNT?
+    shooter: null, 
     pot: false, // used to show win/lose button
     win: false,
     score: [0, 0] // false if not betting
@@ -47,7 +47,6 @@ const App = () => {
 
   let placeBet = () => {
     let player = state.player === 1 ? 2 : 1;
-    console.log(bet);
     if (bet[1] && bet[2]) { // both bets in
       setState({
         ...state,
@@ -59,27 +58,24 @@ const App = () => {
         player: player,
       })
     } else if (!bet[1] && !bet[2]) { // no betting
-      console.log("swear wr")  
       setBet(false);
-        setState({
-          ...state,
-          player: player,
-          score: false,
-          message: "",
-          roll: true,
-          rollCount: 0,
-          stage: "The Comeout",
-        });
+      setState({
+        ...state,
+        player: player,
+        score: false,
+        message: "",
+        roll: true,
+        rollCount: 0,
+        stage: "The Comeout",
+      });
     } else { // 0 or 1 bets
       let newBet = bet;
       newBet[player] = state.bet;
       setBet(newBet);
-      console.log(newBet, bet)
 
       setState({
         ...state,
         player: player,
-        stage: "Bet",
       });
     }
   }
@@ -102,7 +98,6 @@ const App = () => {
       }
       setState({
         ...state,
-        stage: "The Comeout",
         rolling: true,
         roll: true,
         pot: true,
@@ -122,7 +117,6 @@ const App = () => {
       setSwitchPlayer(true);
       setState({
         ...state,  
-        stage: "The Comeout", 
         message: "",
         rolling: false, 
         pot: true,
@@ -135,19 +129,18 @@ const App = () => {
 
     if (state.stage === Stages[0]) {
       let best = state.best;
-      let roll = state.roll;
+      let roll = false;
       let message, stage;
       let nextPlayer = state.player === 1 ? 2 : 1;
-      if (rollCount === 1 || best[1] === rollTotal) {
+      if (state.rollCount === 0 || best[1] === rollTotal) { // 1st roll
         best = [state.player, rollTotal];
-        message = "Now, Player " + nextPlayer + " roll for " + state.shooter.toLowerCase()+ "est."
-        stage = "Set Shooter"
-      } else {
+        message = "";
+        stage = "Set Shooter";
+      } else { // 2nd roll
         best = best[1] > rollTotal ? best : [state.player, rollTotal];
-        message = "Player " + state.player + " rolled " + rollTotal + ". Player " + best[0] + " wins and becomes the shooter.";
+        message = "Player " + best[0] + " wins and becomes the shooter.";
         stage = "Bet";
         nextPlayer = best[0];
-        roll = false;
       }
 
       setSwitchPlayer(false);
@@ -159,7 +152,7 @@ const App = () => {
         player: nextPlayer,
         message: message,
         roll: roll,
-        rollCount: rollCount,
+        rollCount: rollCount + 1,
         rolling: false,
       })
     }
@@ -308,29 +301,39 @@ const App = () => {
             { (state.shooter && state.best[0] > -1) && 
                 <div>
                   {state.stage === "Set Shooter" &&
-                    <h4>
-                      {state.shooter + "est"} roll: {state.best[1] + ", by Player " + state.best[0]}
-                    </h4>
+                    <section>
+                      <h1 className="fw-bold">
+                        Player {state.player}
+                      </h1>
+                      <h4>
+                        {state.shooter + "est"} roll: {state.best[1] + ", by Player " + state.best[0]}
+                      </h4>
+                    </section>
                   }
-                  {(state.stage === "The Point" || state.stage === "The Comeout") && 
+                  {(state.stage === "Bet" || state.stage === "The Point" || state.stage === "The Comeout") && 
                     <div>
-                    <h1 className="my-4 fw-bold">
-                      Shooter
-                    </h1>
-                    <h2>
-                      Player {state.player}{
-                        state.score ? (
-                          state.score[state.player] < 0 ? `: ($${state.score[state.player]})` : `: $${state.score[state.player]}`
-                        ) :
-                        ""
+                      {state.stage !== "Bet" &&
+                        <h1 className="my-4 fw-bold">
+                          Shooter
+                        </h1>
                       }
-                    </h2>
-                  </div>
-                }
-                {state.rollCount > 0 &&
-                  <h4>Roll Count: {state.rollCount}</h4>
-                }
-              </div>
+                      <h2>
+                        Player {state.player}{ state.stage !== "Bet" && // TODO: funnel into top-up pipeline
+                          state.score ? (
+                            state.score[state.player] < 0 ? `: ($${state.score[state.player]})` : `: $${state.score[state.player]}`
+                          ) :
+                          ""
+                        }
+                      </h2>
+                    </div>
+                  }
+                  {state.rollCount > 0 &&
+                    <h4>Roll Count: {state.rollCount}</h4>
+                  }
+                  {state.stage === "Set Shooter" && state.rollCount === 2 && 
+                    <h4>Player {state.best[0]}: {state.best[1]}</h4>
+                  }
+                </div>
             }
             {state.shooter && state.diceTotal !== "..." && (
               <ReactDice
@@ -342,7 +345,10 @@ const App = () => {
               />
             )}
             { state.best[0] !== -1 && 
-              <h1>{state.message}</h1>
+              <div id="rollInfo">
+                { state.stageName !== "butter" && <h2>{state.diceTotal}</h2> }
+                <h1>{state.message}</h1>
+              </div>
             }
           </div>
         </Container>
@@ -404,6 +410,7 @@ const App = () => {
                       message: "",
                       diceTotal: state.win ? state.diceTotal : "...", // to hide the dice (new roll)
                       roll: true, 
+                      stage: "Bet",
                       player: switchPlayer ? (state.player === 1 ? 2 : 1) : state.player,
                     }) 
                   }}
@@ -426,8 +433,7 @@ const App = () => {
                       () => setState({...state, diceTotal: "", roll: true }) 
                       : state.stage === "Bet" ? 
                         () => {
-                          console.log("11111111", state); 
-                          setState({...state, "message": "", roll: true}); 
+                          setState({...state, message: "", roll: true}); 
                           placeBet();
                         } : rollAll
                     }
