@@ -32,7 +32,7 @@ const App = () => {
     win: false,
     score: [0, 0] // false if not betting
   });
-  let [bet, setBet] = useState({1: false, 2: false});
+  let [bets, setBets] = useState({1: false, 2: false}); // dict of totals, each key a list of bets, a bet is a tuple of (player, value)
   let [switchPlayer, setSwitchPlayer] = useState(false);
 
   let setShooter = (value) => {
@@ -47,7 +47,7 @@ const App = () => {
 
   let placeBet = () => {
     let player = state.player === 1 ? 2 : 1;
-    if (bet[1] && bet[2]) { // both bets in
+    if (bets[-1][1] && bets[-1][2]) { // both bets in
       setState({
         ...state,
         stage: "The Comeout",
@@ -57,8 +57,8 @@ const App = () => {
         rollCount: 0,
         player: player,
       })
-    } else if (!bet[1] && !bet[2]) { // no betting
-      setBet(false);
+    } else if (!bets[-1][1] && !bets[-1][2]) { // no betting
+      setBets(false);
       setState({
         ...state,
         player: player,
@@ -69,9 +69,9 @@ const App = () => {
         stage: "The Comeout",
       });
     } else { // 0 or 1 bets
-      let newBet = bet;
-      newBet[player] = state.bet;
-      setBet(newBet);
+      let newBets = bets;
+      newBets[player] = state.bet;
+      setBets(newBets);
 
       setState({
         ...state,
@@ -96,6 +96,15 @@ const App = () => {
         newScore[state.player] += parseInt(newScore[state.player === 1 ? 2 : 1]);
         newScore[state.player === 1 ? 2 : 1] = 0;
       }
+
+      let newBets = bets;
+      delete newBets[0];
+
+      // side bets
+      if (bets.length) {
+
+      }
+
       setState({
         ...state,
         rolling: true,
@@ -417,7 +426,7 @@ const App = () => {
                 >
                   { 
                     state.win ? (
-                      !bet[0] ? "Win" : ("$" + (parseInt(bet[1]) + parseInt(bet[2])))
+                      !bets[0][0] ? "Win" : ("$" + (parseInt(bet[1]) + parseInt(bet[2])))
                     ) : !bet[0] ? "Pass" : ("($" + (parseInt(bet[1]) + parseInt(bet[2])) + ")")
                   }
                 </Button>
