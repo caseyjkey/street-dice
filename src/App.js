@@ -426,8 +426,8 @@ const App = () => {
                 >
                   { 
                     state.win ? (
-                      !bets[0][0] ? "Win" : ("$" + (parseInt(bet[1]) + parseInt(bet[2])))
-                    ) : !bet[0] ? "Pass" : ("($" + (parseInt(bet[1]) + parseInt(bet[2])) + ")")
+                      !bets[state.diceTotal][state.player] ? "Win" : ("$" + (parseInt(bets[state.diceTotal][state.player]) + parseInt(bets[state.diceTotal][state.nextPlayer])))
+                    ) : bets === false ? "Pass" : "($" + (parseInt(bets[state.diceTotal][state.player]) + parseInt(bets[state.diceTotal][state.nextPlayer]) + ")")
                   }
                 </Button>
               </Row>
